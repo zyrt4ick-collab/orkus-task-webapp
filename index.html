@@ -1,163 +1,462 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orkus Task — Профиль</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; background: #000; color: #fff; }
-    #sky { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-    .container { position: relative; z-index: 10; padding: 20px; max-width: 600px; margin: 0 auto; }
-    .card { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border-radius: 20px; padding: 24px; margin: 16px 0; }
-    h1 { font-size: 28px; margin-bottom: 16px; }
-    .grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
-    .stat { text-align: center; }
-    .stat-value { font-size: 24px; font-weight: bold; color: #2196F3; }
-    .btn { display: block; width: 100%; padding: 14px; margin-top: 12px; border: none; border-radius: 14px; background: #2196F3; color: white; font-weight: 600; }
-    .loading { text-align: center; padding: 40px; opacity: 0.7; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>0rkUS Task</title>
+    <meta name="telegram-app-title" content="0rkUS Task">
+    <meta name="telegram-app-description" content="Где задачи находят своих исполнителей — без шума, без лишних слов, одним кликом">
+    <meta name="telegram-app-url" content="https://zyrt4ick-collab.github.io/orkus-task-webapp/">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* ─── ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ─────────────────────────────────────────── */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-highlight: rgba(255, 255, 255, 0.3);
+            --text: #f0f0ff;
+            --card: rgba(30, 30, 40, 0.6);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+            color: var(--text);
+            background: #0f0c29;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* ─── ЖИДКОЕ СТЕКЛО (AERO GLASS) ─────────────────────────────────────── */
+        .liquid-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(1.2);
+            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 var(--glass-highlight);
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Эффект "жидкости" при наведении */
+        .liquid-glass::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        .liquid-glass:hover::after {
+            opacity: 1;
+        }
+
+        /* ─── ЭКРАНЫ ──────────────────────────────────────────────────────────── */
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.6s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header { text-align: center; margin-bottom: 32px; }
+        .header h1 { font-size: 2.4rem; font-weight: 800; margin-bottom: 12px; }
+        .header p { opacity: 0.8; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+        /* ─── КНОПКИ ──────────────────────────────────────────────────────────── */
+        .btn-group { 
+            display: flex; 
+            gap: 12px; 
+            margin: 24px 0; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--card);
+            color: var(--text);
+        }
+        .btn.active, .btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #4ade80, #3b82f6); 
+            color: white; 
+        }
+        .btn-contact { 
+            background: linear-gradient(135deg, #8b5cf6, #ec4899); 
+            color: white; 
+        }
+
+        /* ─── СТАТИСТИКА ──────────────────────────────────────────────────────── */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 16px; 
+            margin: 24px 0; 
+        }
+        .stat-card { 
+            text-align: center; 
+            padding: 20px; 
+            border-radius: 16px; 
+            background: var(--card);
+        }
+        .stat-value { 
+            font-size: 2rem; 
+            font-weight: 800; 
+            margin: 12px 0; 
+        }
+        .stat-label { 
+            opacity: 0.8; 
+        }
+
+        /* ─── FOOTER ──────────────────────────────────────────────────────────── */
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 40px 16px 20px;
+        }
+        .footer img {
+            border-radius: 16px;
+            max-width: 100%;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        /* ─── АДАПТИВ ─────────────────────────────────────────────────────────── */
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .btn-group { flex-direction: column; }
+            .header h1 { font-size: 2rem; }
+        }
+    </style>
 </head>
 <body>
-  <canvas id="sky"></canvas>
-  <div class="container">
-    <div id="content" class="loading">Загрузка…</div>
-  </div>
+    <!-- Слои фона: звёзды и облака -->
+    <div class="stars" id="stars-layer"></div>
+    <div class="clouds" id="clouds-layer"></div>
 
-  <script>
-    const canvas = document.getElementById('sky');
-    const ctx = canvas.getContext('2d');
-    let stars = [], clouds = [];
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      initStars(); initClouds();
-    }
-
-    function initStars() {
-      stars = [];
-      const n = Math.floor(canvas.width * canvas.height / 3000);
-      for (let i = 0; i < n; i++) stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height * 0.8,
-        r: Math.random() * 1.2 + 0.3,
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-
-    function initClouds() {
-      clouds = Array.from({length: 4}, (_, i) => ({
-        x: -200 + i * 400 + Math.random() * 200,
-        y: 80 + Math.random() * 120,
-        w: 1 + Math.random() * 0.5
-      }));
-    }
-
-    function getTime() {
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const offset = Telegram.WebApp.initDataUnsafe?.user?.utc_offset || 10800;
-      return new Date(utc + offset * 1000).getHours() + new Date(utc + offset * 1000).getMinutes() / 60;
-    }
-
-    function render() {
-      const t = getTime();
-      const w = canvas.width, h = canvas.height;
-
-      // Фон
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      if (t < 5.5 || t > 20.5) {
-        grad.addColorStop(0, "#0c0c20"); grad.addColorStop(1, "#1a1a35");
-      } else if (t >= 6.5 && t <= 19.5) {
-        grad.addColorStop(0, "#87CEEB"); grad.addColorStop(1, "#E3F2FD");
-      } else {
-        const blend = t < 12 ? (t - 5.5) : (20.5 - t);
-        const r = 11 + 124 * blend, g = 11 + 195 * blend, b = 29 + 206 * blend;
-        grad.addColorStop(0, `rgb(${r},${g},${b})`);
-        grad.addColorStop(1, `rgb(${29+221*blend},${40+200*blend},${61+194*blend})`);
-      }
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-
-      // Солнце/Луна
-      const prog = Math.min(1, Math.max(0, (t - 5.5) / 15));
-      const sunX = w * prog;
-      const sunY = h * (0.25 + 0.2 * Math.sin(prog * Math.PI));
-
-      if (t >= 5.5 && t <= 20.5) {
-        const g = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 35);
-        g.addColorStop(0, "#FFD54F"); g.addColorStop(1, "rgba(255,213,79,0.1)");
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(sunX, sunY, 35, 0, 2 * Math.PI); ctx.fill();
-      } else {
-        ctx.fillStyle = "#E0E0E0";
-        ctx.beginPath(); ctx.arc(sunX, sunY, 22, 0, 2 * Math.PI); ctx.fill();
-        ctx.fillStyle = "#B0B0C0";
-        ctx.beginPath(); ctx.arc(sunX + 4, sunY - 4, 10, 0, 2 * Math.PI); ctx.fill();
-      }
-
-      // Звёзды
-      if (t < 6.5 || t > 19.5) {
-        stars.forEach(s => {
-          s.phase += 0.02;
-          ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.7 * Math.abs(Math.sin(s.phase))})`;
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 2 * Math.PI); ctx.fill();
-        });
-      }
-
-      // Облака
-      if (t >= 6 && t <= 20) {
-        clouds.forEach(c => {
-          c.x += 0.3;
-          if (c.x > w + 200) c.x = -300;
-          ctx.fillStyle = "rgba(255,255,255,0.92)";
-          const s = c.w;
-          ctx.beginPath();
-          ctx.arc(c.x, c.y, 20 * s, 0, 2 * Math.PI);
-          ctx.arc(c.x + 18 * s, c.y - 8 * s, 18 * s, 0, 2 * Math.PI);
-          ctx.arc(c.x + 36 * s, c.y, 20 * s, 0, 2 * Math.PI);
-          ctx.fill();
-        });
-      }
-
-      requestAnimationFrame(render);
-    }
-
-    async function loadProfile() {
-      try {
-        const WebApp = window.Telegram.WebApp;
-        WebApp.ready();
-        WebApp.expand();
-
-        // Здесь будет запрос к API бота. Пока — mock.
-        const stats = { completed: 3, in_progress: 1, overdue: 0, earned: 4200 };
-        const content = `
-          <h1>👋 Добро пожаловать!</h1>
-          <div class="card">
-            <h2>📊 Статистика</h2>
-            <div class="grid">
-              <div class="stat"><div class="stat-value">${stats.completed}</div>Выполнено</div>
-              <div class="stat"><div class="stat-value">${stats.in_progress}</div>В работе</div>
-              <div class="stat"><div class="stat-value" style="color:#FF5252">${stats.overdue}</div>Просрочено</div>
-              <div class="stat"><div class="stat-value">${stats.earned}</div>₽ заработано</div>
+    <div id="app">
+        <!-- Экран: загрузка -->
+        <div id="screen-loading" class="screen active">
+            <div class="liquid-glass" style="padding: 40px; text-align: center;">
+                <h2>🌀 Загрузка...</h2>
+                <p>Проверяем авторизацию через Telegram</p>
             </div>
-          </div>
-          <button class="btn" onclick="WebApp.openTelegramLink('https://t.me/Orkus4_bot')">💬 Чат с ботом</button>
-        `;
-        document.getElementById('content').innerHTML = content;
-      } catch (e) {
-        document.getElementById('content').innerHTML = `❌ Ошибка: ${e.message}`;
-      }
-    }
+        </div>
 
-    window.addEventListener('load', () => {
-      resize();
-      window.addEventListener('resize', resize);
-      render();
-      setTimeout(loadProfile, 500);
-    });
-  </script>
+        <!-- Экран: не авторизован -->
+        <div id="screen-unauth" class="screen">
+            <div class="liquid-glass" style="padding: 40px; text-align: center;">
+                <h2>🔒 Требуется авторизация</h2>
+                <p>Откройте бота и нажмите «Начать», чтобы получить доступ к задачам.</p>
+                <button class="btn btn-primary" onclick="openBot()">
+                    📲 Перейти в бота
+                </button>
+            </div>
+        </div>
+
+        <!-- Экран: основной (только для авторизованных) -->
+        <div id="screen-main" class="screen">
+            <div class="header">
+                <h1 id="greeting">Добрый день!</h1>
+                <p id="user-name">Пользователь</p>
+            </div>
+
+            <!-- Выбор темы -->
+            <div class="btn-group">
+                <button class="btn active" data-theme="auto">Авто</button>
+                <button class="btn" data-theme="light">Светлая</button>
+                <button class="btn" data-theme="dark">Тёмная</button>
+            </div>
+
+            <!-- Статистика -->
+            <div class="liquid-glass" style="padding: 24px;">
+                <h3>📊 Статистика</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-completed">—</div>
+                        <div class="stat-label">Выполнено</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-in-progress">—</div>
+                        <div class="stat-label">В процессе</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-earned">—</div>
+                        <div class="stat-label">Заработано</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total">—</div>
+                        <div class="stat-label">Всего задач</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Навигация -->
+            <div class="btn-group">
+                <button class="btn" onclick="window.open('https://t.me/OrkUs4', '_blank')">
+                    📣 Канал с задачами
+                </button>
+                <button class="btn" onclick="showSection('tasks')">📋 Задачи</button>
+                <button class="btn" onclick="showSection('profile')">👤 Профиль</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER: фото + контакты -->
+    <div class="footer">
+        <img src="https://i.pinimg.com/736x/39/71/7e/39717e342e8eadd12055eb24442c0e22.jpg" 
+             alt="0rkUS Task" loading="lazy">
+        <button class="btn btn-contact" onclick="location.href='https://t.me/Zyrt4'">
+            📩 По всем вопросам — нажмите сюда
+        </button>
+        <p style="margin-top: 20px; opacity: 0.6; font-size: 0.9rem;">
+            Задания публикуются в канале: 
+            <a href="https://t.me/OrkUs4" target="_blank" style="color: #4ade80; text-decoration: underline;">
+                @OrkUs4
+            </a>
+        </p>
+    </div>
+
+    <script>
+        // ─── ПАРАМЕТРЫ ───────────────────────────────────────────────────────────
+        let isNightMode = true;
+        let stars = [];
+        let clouds = [];
+        let uid = null;
+
+        // ─── СОЗДАНИЕ ЗВЁЗД ──────────────────────────────────────────────────────
+        function createStars() {
+            const layer = document.getElementById('stars-layer');
+            layer.innerHTML = '';
+            stars = [];
+            for (let i = 0; i < 250; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2 + 1;
+                star.style.width = star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.dataset.x = parseFloat(star.style.left);
+                star.dataset.y = parseFloat(star.style.top);
+                layer.appendChild(star);
+                stars.push(star);
+            }
+            layer.style.opacity = isNightMode ? '1' : '0';
+        }
+
+        // ─── СОЗДАНИЕ ОБЛАКОВ ────────────────────────────────────────────────────
+        function createClouds() {
+            const layer = document.getElementById('clouds-layer');
+            layer.innerHTML = '';
+            clouds = [];
+            for (let i = 0; i < 6; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
+                const w = 100 + Math.random() * 80;
+                const h = 40 + Math.random() * 30;
+                cloud.style.width = w + 'px';
+                cloud.style.height = h + 'px';
+                cloud.style.left = Math.random() * 100 + '%';
+                cloud.style.top = 10 + Math.random() * 40 + '%';
+                cloud.dataset.x = parseFloat(cloud.style.left);
+                cloud.dataset.y = parseFloat(cloud.style.top);
+                layer.appendChild(cloud);
+                clouds.push(cloud);
+            }
+            layer.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                z-index: -1; pointer-events: none; opacity: ${isNightMode ? 0 : 0.9};
+            `;
+        }
+
+        // ─── ЭФФЕКТ ДАВЛЕНИЯ ОТ МЫШИ ─────────────────────────────────────────────
+        function applyPressure(x, y) {
+            const elements = isNightMode ? stars : clouds;
+            const maxDist = isNightMode ? 120 : 100;
+            const maxForce = isNightMode ? 50 : 30;
+
+            elements.forEach(el => {
+                if (!el.dataset.x || !el.dataset.y) return;
+                
+                const origX = parseFloat(el.dataset.x) / 100 * window.innerWidth;
+                const origY = parseFloat(el.dataset.y) / 100 * window.innerHeight;
+                
+                const dx = x - origX;
+                const dy = y - origY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < maxDist) {
+                    const force = (1 - dist / maxDist) * maxForce;
+                    const angle = Math.atan2(dy, dx);
+                    const offsetX = Math.cos(angle) * force;
+                    const offsetY = Math.sin(angle) * force;
+                    el.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+                } else {
+                    el.style.transform = 'translate(0,0)';
+                }
+            });
+        }
+
+        // ─── ГИРОСКОП ────────────────────────────────────────────────────────────
+        function initGyro() {
+            if (!window.DeviceOrientationEvent) return;
+            let tiltX = 0, tiltY = 0;
+
+            window.addEventListener('deviceorientation', (e) => {
+                if (e.beta !== null) tiltY = e.beta / 90;
+                if (e.gamma !== null) tiltX = e.gamma / 90;
+
+                const offsetX = tiltX * 25;
+                const offsetY = tiltY * 15;
+
+                const elements = isNightMode ? stars : clouds;
+                elements.forEach(el => {
+                    if (!el.dataset.x || !el.dataset.y) return;
+                    const origX = parseFloat(el.dataset.x) / 100 * window.innerWidth;
+                    const origY = parseFloat(el.dataset.y) / 100 * window.innerHeight;
+                    const newX = origX + offsetX;
+                    const newY = origY + offsetY;
+                    el.style.transform = `translate(${newX - origX}px, ${newY - origY}px)`;
+                });
+            });
+        }
+
+        // ─── СМЕНА ТЕМЫ ──────────────────────────────────────────────────────────
+        function setTheme(theme) {
+            document.querySelectorAll('[data-theme]').forEach(btn => 
+                btn.classList.toggle('active', btn.dataset.theme === theme)
+            );
+
+            if (theme === 'auto') {
+                isNightMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } else {
+                isNightMode = (theme === 'dark');
+            }
+
+            // Обновляем фон
+            document.body.style.background = isNightMode ? '#0f0c29' : '#e0e7ff';
+            document.documentElement.style.setProperty('--text', isNightMode ? '#f0f0ff' : '#1e293b');
+
+            // Скрываем/показываем слои
+            document.getElementById('stars-layer').style.opacity = isNightMode ? '1' : '0';
+            document.getElementById('clouds-layer').style.opacity = isNightMode ? '0' : '0.9';
+        }
+
+        // ─── ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ─────────────────────────────────────────────
+        function openBot() {
+            Telegram.WebApp.openTelegramLink('https://t.me/Orkus4_bot?start=start');
+        }
+
+        function showSection(id) {
+            alert(`Раздел "${id}" будет доступен в ближайшем обновлении.`);
+        }
+
+        // ─── ИНИЦИАЛИЗАЦИЯ ───────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            // Создаём элементы фона
+            createStars();
+            createClouds();
+
+            // События мыши
+            document.addEventListener('mousemove', (e) => applyPressure(e.clientX, e.clientY));
+            document.addEventListener('mouseleave', () => {
+                [...stars, ...clouds].forEach(el => el.style.transform = 'translate(0,0)');
+            });
+
+            // Гиро
+            initGyro();
+
+            // Тема по умолчанию
+            setTheme('auto');
+
+            // Приветствие по времени
+            const hour = new Date().getHours();
+            const greeting = hour < 6 ? 'Доброй ночи' :
+                           hour < 12 ? 'Доброе утро' :
+                           hour < 18 ? 'Добрый день' : 'Добрый вечер';
+            document.getElementById('greeting').textContent = `${greeting}!`;
+
+            // Получаем UID из URL
+            const params = new URLSearchParams(window.location.search);
+            uid = params.get('uid');
+
+            // Эмуляция авторизации (в реальном проекте — запрос к /api/user)
+            setTimeout(() => {
+                if (uid) {
+                    // В продакшене: fetch('/api/user?uid=' + uid)
+                    // Здесь — демо-данные
+                    document.getElementById('user-name').textContent = uid === '7238113090' ? 'Алексей' : 'Исполнитель';
+                    document.getElementById('stat-completed').textContent = '4';
+                    document.getElementById('stat-in-progress').textContent = '1';
+                    document.getElementById('stat-earned').textContent = '18 200 ₽';
+                    document.getElementById('stat-total').textContent = '5';
+                    document.getElementById('screen-loading').classList.remove('active');
+                    document.getElementById('screen-main').classList.add('active');
+                } else {
+                    document.getElementById('screen-loading').classList.remove('active');
+                    document.getElementById('screen-unauth').classList.add('active');
+                }
+            }, 800);
+
+            // Кнопки темы
+            document.querySelectorAll('[data-theme]').forEach(btn => {
+                btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+            });
+        });
+    </script>
+
+    <!-- Стили для звёзд и облаков -->
+    <style>
+        .stars, .clouds {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            transition: opacity 0.8s;
+        }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            filter: blur(12px);
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
 </body>
 </html>
